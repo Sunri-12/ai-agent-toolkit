@@ -178,10 +178,13 @@ print(result["answer"])
 ### Q1：為什麼 RAG 採用 `BM25 + Vector` 搭配 `RRF` 融合，而不是純向量搜尋？公式中的 `60` 代表什麼？
 * 設計痛點：在科技製造業場景中，文件包含大量精確型號、料號與錯誤代碼（如 `PSU-800W-B2`、`ERR-092`）。純向量檢索（Dense Retrieval）擅長捕捉語意，但對一字之差的英數型號容易混淆；加入 `BM25`（Sparse Retrieval）能確保精確字詞匹配。
 * 為什麼用 RRF（Reciprocal Rank Fusion）：BM25 的分數無上限，而 Cosine Similarity 介於 `-1 ~ 1`，兩者尺度不同無法直接線性相加。RRF 改以「各自的名次（Rank）」進行倒數計分：
-  $$
-  \text{RRF\_Score}(d) = \sum_{r \in \{\text{BM25}, \text{Vector}\}} \frac{1}{k + \text{rank}_r(d)}
-  $$
-  其中的常數 $k = 60$ 為平滑常數（Smoothing Constant），用來抑制單一檢索器將誤判文件排在第一名時所產生的極端權重影響。
+  **RRF Score (d)** = Σ 1 / (k + rankᵣ(d))
+
+  其中：
+  - r ∈ {BM25, Vector}
+  - k：平滑常數（Smoothing Constant），用來抑制單一檢索器將誤判文件排在第一名時所產生的極端權重影響。
+  - rankᵣ(d)：文件 d 在檢索方法 r 中的排名
+
 * 10 萬份文件規模化演進（Production Scaling）：
   1. 儲存層：將 In-Memory 的 `ChromaDB` 與 `BM25Okapi` 遷移至原生支援 Hybrid Search 與持久化叢集的 Qdrant / Milvus 或 Elasticsearch / OpenSearch。
   2. 精排層（Reranking）：在 RRF 粗篩出 Top-50 候選區塊後，串接一層 Cross-Encoder Reranker（如 `bge-reranker-large` 或 Cohere Rerank）精選出 Top-5 再送入 LLM，大幅提升 Context 精準度。
