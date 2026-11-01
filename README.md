@@ -178,6 +178,7 @@ print(result["answer"])
 ### Q1：為什麼 RAG 採用 `BM25 + Vector` 搭配 `RRF` 融合，而不是純向量搜尋？公式中的 `60` 代表什麼？
 * 設計痛點：在科技製造業場景中，文件包含大量精確型號、料號與錯誤代碼（如 `PSU-800W-B2`、`ERR-092`）。純向量檢索（Dense Retrieval）擅長捕捉語意，但對一字之差的英數型號容易混淆；加入 `BM25`（Sparse Retrieval）能確保精確字詞匹配。
 * 為什麼用 RRF（Reciprocal Rank Fusion）：BM25 的分數無上限，而 Cosine Similarity 介於 `-1 ~ 1`，兩者尺度不同無法直接線性相加。RRF 改以「各自的名次（Rank）」進行倒數計分：
+
   **RRF Score (d)** = Σ 1 / (k + rankᵣ(d))
 
   其中：
